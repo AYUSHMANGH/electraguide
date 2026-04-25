@@ -2,8 +2,9 @@ import { useState, useEffect, useCallback } from 'react';
 import { GoogleMap, useJsApiLoader, Marker, InfoWindow } from '@react-google-maps/api';
 import { motion } from 'framer-motion';
 import { MapPin, Navigation, AlertCircle, Search } from 'lucide-react';
-import { getGeminiResponse } from '../lib/gemini';
+import { getGroqResponse } from '../lib/groq';
 import ReactMarkdown from 'react-markdown';
+import DOMPurify from 'dompurify';
 
 const containerStyle = {
   width: '100%',
@@ -52,7 +53,7 @@ const Map = () => {
       3. Estimated historical support percentages or general strength (e.g., "Strong majority", "~40% vote share").
       Keep the answer brief (2-3 paragraphs max), informative, and neutral.`;
       
-      const response = await getGeminiResponse(prompt);
+      const response = await getGroqResponse(prompt);
       setLocalInfo(response);
     } catch (error) {
       console.error("Error fetching local info:", error);
@@ -203,7 +204,7 @@ const Map = () => {
                 <div className="mb-4 inline-block px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-xs font-bold uppercase tracking-wider border border-blue-200">
                   Location Analyzed
                 </div>
-                <ReactMarkdown>{localInfo}</ReactMarkdown>
+                <ReactMarkdown>{DOMPurify.sanitize(localInfo)}</ReactMarkdown>
               </motion.div>
             )}
           </div>

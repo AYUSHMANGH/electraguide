@@ -1,7 +1,8 @@
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Send, Bot, User, Loader2, Sparkles } from 'lucide-react';
-import { getGeminiChatResponse } from '../lib/gemini';
+import { BrainCircuit, Send, Bot, User, Loader2, Sparkles, RotateCcw } from 'lucide-react';
+import DOMPurify from 'dompurify';
+import { getGroqChatResponse } from '../lib/groq';
 import ReactMarkdown from 'react-markdown';
 
 const Assistant = () => {
@@ -43,13 +44,10 @@ const Assistant = () => {
 
       const chatHistory = historyToPass.map(msg => ({
         role: msg.role,
-        parts: [{ text: msg.parts }]
+        content: msg.parts
       }));
 
-      // We append instructions to ensure the model responds appropriately
-      const contextualPrompt = `You are Electra, an AI Election Assistant. Explain things simply, step-by-step, using bullet points and examples where helpful. Keep it suitable for a beginner. The user's question is: ${userMessage}`;
-
-      const response = await getGeminiChatResponse(chatHistory, contextualPrompt);
+      const response = await getGroqChatResponse(userMessage, chatHistory);
       
       setMessages(prev => [...prev, { role: 'model', parts: response }]);
     } catch (error) {
@@ -107,7 +105,7 @@ const Assistant = () => {
                   {message.role === 'user' ? (
                     message.parts
                   ) : (
-                    <ReactMarkdown>{message.parts}</ReactMarkdown>
+                    <ReactMarkdown>{DOMPurify.sanitize(message.parts)}</ReactMarkdown>
                   )}
                 </div>
               </motion.div>
@@ -150,19 +148,21 @@ const Assistant = () => {
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="relative flex items-center">
+          <form onSubmit={handleSubmit} className="flex gap-4">
             <input
               type="text"
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder="Ask a question..."
-              className="w-full bg-white border border-slate-300 text-slate-900 rounded-full pl-5 pr-14 py-3.5 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent shadow-sm transition-shadow"
+              placeholder="Type your question here..."
+              aria-label="Ask a question about elections"
+              className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:bg-white transition-all text-slate-800 placeholder-slate-400"
               disabled={isLoading}
             />
             <button
               type="submit"
               disabled={!input.trim() || isLoading}
-              className="absolute right-2 p-2 bg-primary-600 text-white rounded-full hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-md"
+              aria-label="Send message"
+              className="bg-primary-600 hover:bg-primary-700 text-white p-3 rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-lg hover:-translate-y-0.5 flex-shrink-0"
             >
               <Send size={18} className={input.trim() && !isLoading ? 'translate-x-0.5' : ''} />
             </button>
@@ -176,6 +176,4 @@ const Assistant = () => {
   );
 };
 
-// Need to import BrainCircuit at top, missed it. Adding here as a quick fix for the file content
-import { BrainCircuit } from 'lucide-react';
 export default Assistant;

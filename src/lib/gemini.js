@@ -45,9 +45,22 @@ export const getGeminiChatResponse = async (history, message) => {
         return response.text();
     } catch (error) {
         console.error("Error fetching Gemini chat response:", error);
-        // Intelligent fallback if chat API fails due to rate limits
+        // Intelligent conversational fallback if chat API fails due to rate limits
         if (error.message && error.message.includes("429")) {
-            return "I am currently experiencing high demand due to API rate limits! But don't worry, I am Electra, your AI Election Assistant. \n\nEven though I cannot connect to my live knowledge base right now, you can still explore the **Timeline**, take the **Quiz**, or check your **Eligibility** using the navigation menu above!";
+            const msg = message.toLowerCase();
+            if (msg.includes("hello") || msg.includes("hi") || msg.includes("hey")) {
+                return "Hello there! I'm currently running in **Offline Mode** due to high API demand, but I can still answer basic questions about elections! What would you like to know?";
+            } else if (msg.includes("register") || msg.includes("voter id")) {
+                return "To register to vote in India, you need to be a citizen of 18 years or older. You can apply online via the **Voter Portal (voters.eci.gov.in)** using Form 6. You'll need proof of age and proof of address!";
+            } else if (msg.includes("how") && msg.includes("work")) {
+                return "Elections in India work through a democratic process where citizens vote for representatives. The country is divided into constituencies, and the candidate with the most votes in each constituency wins a seat in the Parliament (Lok Sabha) or State Assembly (Vidhan Sabha).";
+            } else if (msg.includes("evm") || msg.includes("machine")) {
+                return "An EVM is an Electronic Voting Machine. It's used in India to securely and quickly record votes. You simply press the blue button next to your chosen candidate's symbol, and a VVPAT machine will print a slip to verify your vote!";
+            } else if (msg.includes("who") && msg.includes("vote")) {
+                return "Every Indian citizen who has attained the age of 18 years on the qualifying date (usually January 1st of the year) and whose name is in the electoral roll is eligible to vote!";
+            } else {
+                return "I'm currently running in **Offline Mode** to conserve API limits, so I only have limited knowledge right now! \n\nYou can ask me about:\n- How to register to vote\n- How elections work\n- Who can vote\n- What an EVM is\n\nOr you can explore the Timeline and Quiz using the navigation menu!";
+            }
         }
         return "I'm sorry, I encountered an error while processing your request. Please try again.";
     }

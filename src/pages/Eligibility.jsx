@@ -1,6 +1,14 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CheckCircle2, XCircle, AlertCircle, Search, ShieldCheck } from 'lucide-react';
+import { z } from 'zod';
+
+const eligibilitySchema = z.object({
+  age: z.number().int().min(0).max(120),
+  citizenship: z.enum(['yes', 'no']),
+  residency: z.enum(['yes', 'no']),
+  criminalRecord: z.enum(['yes', 'no'])
+});
 
 const Eligibility = () => {
   const [formData, setFormData] = useState({
@@ -15,30 +23,27 @@ const Eligibility = () => {
   const checkEligibility = (e) => {
     e.preventDefault();
     
-    const age = parseInt(formData.age, 10);
-    
-    // Simple mock logic for generic eligibility
-    // Real implementation would be more complex and region-specific
-    if (isNaN(age)) {
-      setResult({ status: 'error', message: 'Please enter a valid age.' });
-      return;
-    }
+    try {
+      const validatedData = eligibilitySchema.parse({
+        ...formData,
+        age: parseInt(formData.age, 10)
+      });
 
-    if (formData.citizenship === 'no') {
+      if (validatedData.citizenship === 'no') {
       setResult({ 
         status: 'ineligible', 
         title: 'Not Eligible',
         message: 'You must be a citizen of the country to vote in national elections.',
         action: 'Learn about citizenship requirements'
       });
-    } else if (age < 18) {
+    } else if (validatedData.age < 18) {
       setResult({ 
         status: 'ineligible',
         title: 'Not Eligible Yet', 
-        message: `You must be at least 18 years old to vote. You can register in ${18 - age} year(s).`,
+        message: `You must be at least 18 years old to vote. You can register in ${18 - validatedData.age} year(s).`,
         action: 'Learn about pre-registration'
       });
-    } else if (formData.residency === 'no') {
+    } else if (validatedData.residency === 'no') {
        setResult({ 
         status: 'warning',
         title: 'Further Action Required', 
@@ -52,6 +57,13 @@ const Eligibility = () => {
         message: 'Based on the information provided, you meet the basic requirements to vote.',
         action: 'Register to vote now'
       });
+    }
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        setResult({ status: 'error', title: 'Invalid Input', message: 'Please check your inputs and try again.', action: null });
+      } else {
+        setResult({ status: 'error', title: 'Error', message: 'An unexpected error occurred.', action: null });
+      }
     }
   };
 

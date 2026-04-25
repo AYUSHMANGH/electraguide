@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronRight, CalendarCheck, Megaphone, Vote, BarChart4 } from 'lucide-react';
-import { getGeminiResponse } from '../lib/gemini';
+import { getGroqResponse } from '../lib/groq';
 import ReactMarkdown from 'react-markdown';
+import DOMPurify from 'dompurify';
 
 const steps = [
   {
@@ -58,7 +59,8 @@ const Timeline = () => {
     setIsLoading(true);
     setDetailedContent('');
     
-    const response = await getGeminiResponse(step.prompt);
+    // Call the AI API using the prompt
+    const response = await getGroqResponse(step.prompt);
     
     if (!response.includes("Whoops!") && !response.includes("I'm sorry")) {
       setCache(prev => ({ ...prev, [step.id]: response }));
@@ -172,7 +174,7 @@ const Timeline = () => {
                 ) : null}
                 
                 <div className="prose prose-slate prose-lg max-w-none prose-headings:text-slate-800 prose-p:text-slate-600 prose-a:text-primary-600 prose-li:text-slate-600">
-                  <ReactMarkdown>{detailedContent}</ReactMarkdown>
+                  <ReactMarkdown>{DOMPurify.sanitize(detailedContent)}</ReactMarkdown>
                 </div>
               </div>
             </motion.div>
