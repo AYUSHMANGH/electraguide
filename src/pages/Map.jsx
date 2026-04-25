@@ -103,7 +103,7 @@ const Map = () => {
   };
 
   return (
-    <div className="max-w-6xl mx-auto py-8 px-4 h-[calc(100vh-8rem)] flex flex-col">
+    <div className="max-w-6xl mx-auto py-8 px-4 lg:h-[calc(100vh-8rem)] flex flex-col">
       <div className="mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-extrabold text-slate-900 flex items-center gap-3">
@@ -131,7 +131,7 @@ const Map = () => {
 
       <div className="flex flex-col lg:flex-row gap-6 flex-1 min-h-0">
         {/* Map Container */}
-        <div className="lg:w-2/3 h-[400px] lg:h-full bg-white rounded-3xl shadow-xl border border-slate-200 overflow-hidden relative">
+        <div className="lg:w-2/3 h-96 lg:h-full bg-white rounded-3xl shadow-xl border border-slate-200 overflow-hidden relative">
           {!isLoaded ? (
             <div className="absolute inset-0 flex items-center justify-center bg-slate-50">
               <div className="w-10 h-10 border-4 border-slate-200 border-t-primary-600 rounded-full animate-spin"></div>
