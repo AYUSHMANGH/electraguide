@@ -34,28 +34,32 @@ const Eligibility = () => {
         status: 'ineligible', 
         title: 'Not Eligible',
         message: 'You must be a citizen of the country to vote in national elections.',
-        action: 'Learn about citizenship requirements'
+        action: 'Learn about citizenship requirements',
+        link: 'https://eci.gov.in'
       });
     } else if (validatedData.age < 18) {
       setResult({ 
         status: 'ineligible',
         title: 'Not Eligible Yet', 
         message: `You must be at least 18 years old to vote. You can register in ${18 - validatedData.age} year(s).`,
-        action: 'Learn about pre-registration'
+        action: 'Learn about pre-registration',
+        link: 'https://voters.eci.gov.in'
       });
     } else if (validatedData.residency === 'no') {
        setResult({ 
         status: 'warning',
         title: 'Further Action Required', 
         message: 'You may need to establish residency or apply for an absentee ballot if you live abroad.',
-        action: 'View absentee voting guidelines'
+        action: 'View absentee voting guidelines',
+        link: 'https://www.mea.gov.in/overseas-voting.htm'
       });
     } else {
       setResult({ 
         status: 'eligible', 
-        title: 'You are Eligible!',
-        message: 'Based on the information provided, you meet the basic requirements to vote.',
-        action: 'Register to vote now'
+        title: 'You are Eligible! 🎉',
+        message: 'Based on the information provided, you meet the basic requirements to vote. Make your voice heard!',
+        action: 'Register to vote now',
+        link: 'https://voters.eci.gov.in'
       });
     }
     } catch (error) {
@@ -205,7 +209,7 @@ const Eligibility = () => {
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.95 }}
                 transition={{ type: "spring", bounce: 0.4 }}
-                className={`h-full flex flex-col justify-center p-8 rounded-3xl shadow-xl text-center relative overflow-hidden ${
+                className={`min-h-[300px] flex flex-col justify-center p-8 rounded-3xl shadow-xl text-center relative overflow-hidden ${
                   result.status === 'eligible' 
                     ? 'bg-gradient-to-br from-emerald-400 to-emerald-600 text-white' 
                     : result.status === 'warning'
@@ -234,13 +238,18 @@ const Eligibility = () => {
                   </p>
                   
                   {result.action && (
-                    <button className={`px-6 py-3 rounded-full font-bold shadow-md transition-transform hover:-translate-y-0.5 ${
-                      result.status === 'eligible' || result.status === 'warning'
-                        ? 'bg-white text-slate-900' 
-                        : 'bg-slate-800 text-white'
-                    }`}>
+                    <a 
+                      href={result.link || '#'}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className={`inline-block mt-2 px-8 py-3 rounded-full font-bold text-sm shadow-lg transition-all hover:-translate-y-0.5 hover:shadow-xl ${
+                        result.status === 'eligible' || result.status === 'warning'
+                          ? 'bg-white text-slate-900 hover:bg-slate-100' 
+                          : 'bg-slate-800 text-white hover:bg-slate-700'
+                      }`}
+                    >
                       {result.action}
-                    </button>
+                    </a>
                   )}
                 </div>
               </motion.div>
