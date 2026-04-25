@@ -1,70 +1,87 @@
-// ─── Offline fallback (only used when API is truly unavailable) ───────────────
+// Groq API client — used directly ONLY in local development
+let groqClient = null;
+
+const getClient = async () => {
+  if (groqClient) return groqClient;
+  const apiKey = import.meta.env.VITE_GROQ_API_KEY;
+  if (!apiKey) return null;
+
+  try {
+    const { default: Groq } = await import('groq-sdk');
+    groqClient = new Groq({ apiKey, dangerouslyAllowBrowser: true });
+    return groqClient;
+  } catch (err) {
+    return null;
+  }
+};
+
 const getOfflineFallback = (message) => {
   const msg = message.toLowerCase();
-  if (msg.includes('hello') || msg.includes('hi') || msg.includes('hey')) {
-    return "Hello! I'm Electra, your AI Election Assistant 🗳️. What would you like to know about the Indian electoral process?";
-  }
-  if (msg.includes('register') || msg.includes('voter id')) {
-    return "To register to vote in India, you need to be a citizen aged 18+. Apply online at **[voters.eci.gov.in](https://voters.eci.gov.in)** using Form 6 with proof of age and address.";
-  }
-  if (msg.includes('how') && msg.includes('work')) {
-    return "Elections in India use a **First-Past-The-Post** system. The country is divided into constituencies; the candidate with the most votes in each wins a seat in the Lok Sabha or State Assembly.";
-  }
-  if (msg.includes('evm') || msg.includes('machine')) {
-    return "An **EVM (Electronic Voting Machine)** records votes securely. Press the blue button next to your candidate's symbol. A VVPAT machine prints a slip so you can verify your vote.";
-  }
-  if (msg.includes('who') && msg.includes('vote')) {
-    return "Every Indian citizen aged **18 or above** whose name appears on the electoral roll is eligible to vote.";
-  }
-  return "I'm having trouble connecting to my AI backend. Please try again in a moment, or explore the **Timeline** and **Quiz** pages!";
+  if (msg.includes('hello') || msg.includes('hi')) return "Hello! I'm Electra 🗳️. How can I help you today?";
+  return "I'm having trouble connecting to my AI backend. Please check your internet or try again later!";
 };
 
 /**
- * AI Chat Response via Server Proxy
- * Calls /api/chat which uses the server-side GROQ_API_KEY
+ * AI Chat Response
+ * Automatically chooses between direct SDK (local) or Server Proxy (production)
  */
 export const getGroqChatResponse = async (message, history = []) => {
+  // 1. Try direct SDK first (for local npm run dev)
+  if (import.meta.env.DEV) {
+    try {
+      const client = await getClient();
+      if (client) {
+        const messages = [
+          { role: 'system', content: 'You are Electra, an AI Election Assistant for India.' },
+          ...history.map(m => ({ role: m.role === 'model' ? 'assistant' : 'user', content: m.parts || m.content || '' })),
+          { role: 'user', content: message }
+        ];
+        const completion = await client.chat.completions.create({ model: 'llama-3.1-8b-instant', messages });
+        return completion.choices[0]?.message?.content;
+      }
+    } catch (e) { console.warn("Local Groq failed, trying proxy..."); }
+  }
+
+  // 2. Fallback to Proxy (for Cloud Run)
   try {
     const response = await fetch('/api/chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ message, history }),
     });
-
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.error || 'Failed to fetch AI response');
-    }
-
     const data = await response.json();
     return data.response;
   } catch (err) {
-    console.error('[Groq Proxy] Chat error:', err);
     return getOfflineFallback(message);
   }
 };
 
 /**
- * Single AI Prompt Response via Server Proxy
- * Calls /api/prompt which uses the server-side GROQ_API_KEY
+ * Single AI Prompt
  */
 export const getGroqResponse = async (prompt) => {
+  if (import.meta.env.DEV) {
+    try {
+      const client = await getClient();
+      if (client) {
+        const completion = await client.chat.completions.create({
+          model: 'llama-3.1-8b-instant',
+          messages: [{ role: 'user', content: prompt }]
+        });
+        return completion.choices[0]?.message?.content;
+      }
+    } catch (e) {}
+  }
+
   try {
     const response = await fetch('/api/prompt', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ prompt }),
     });
-
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.error || 'Failed to fetch AI response');
-    }
-
     const data = await response.json();
     return data.response;
   } catch (err) {
-    console.error('[Groq Proxy] Response error:', err);
-    return 'Information is currently unavailable.';
+    return 'Information unavailable.';
   }
 };
