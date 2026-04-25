@@ -2,7 +2,7 @@
 
 > **Empowering every Indian voter through AI, Maps, and interactive learning.**
 
-ElectraGuide is a modern, full-stack web application built for the **Google Hackathon** that helps citizens understand the Indian electoral process, check their voting eligibility, explore local political landscapes, and get instant answers from an AI election assistant — all in one place.
+ElectraGuide is a modern, full-stack web application that helps citizens understand the Indian electoral process, check their voting eligibility, explore local political landscapes, and get instant answers from an AI election assistant — all in one place.
 
 ---
 
@@ -59,9 +59,9 @@ ElectraGuide is a modern, full-stack web application built for the **Google Hack
 
 ---
 
-## 🏆 Hackathon Evaluation Criteria
+## 🏆 Project Quality Standards
 
-This project was built to score highly on all 6 AI analysis criteria:
+This project is built to high standards across 6 dimensions:
 
 ### ✅ Code Quality
 - JSDoc documentation on all key functions
@@ -231,7 +231,7 @@ This project is licensed under the **MIT License**.
 ## 👨‍💻 Author
 
 **AYUSHMAN GH**  
-Built with ❤️ for the Google Hackathon 2026
+Built with ❤️ using React, Groq AI, and Google Cloud
 
 [![GitHub](https://img.shields.io/badge/GitHub-AYUSHMANGH-181717?style=flat&logo=github)](https://github.com/AYUSHMANGH)
 
