@@ -58,7 +58,7 @@ export const getGroqChatResponse = async (message, history = []) => {
 
         const completion = await groq.chat.completions.create({
             messages: messages,
-            model: "llama3-8b-8192", // Using Llama 3 8B which is incredibly fast and standard on Groq
+            model: "llama-3.1-8b-instant", // Using supported model
             temperature: 0.7,
             max_tokens: 8192,
         });
@@ -89,7 +89,7 @@ export const getGroqResponse = async (prompt) => {
                     content: prompt
                  }
             ],
-            model: "llama3-8b-8192", 
+            model: "llama-3.1-8b-instant",
             temperature: 0.5,
             max_tokens: 4000,
         });
