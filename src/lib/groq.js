@@ -1,27 +1,3 @@
-// Groq API client — initialized lazily on first call so Vite env vars are ready
-let groqClient = null;
-
-const getClient = async () => {
-  if (groqClient) return groqClient;
-
-  const apiKey = import.meta.env.VITE_GROQ_API_KEY;
-
-  if (!apiKey) {
-    console.error('[Groq] VITE_GROQ_API_KEY is not set in .env');
-    return null;
-  }
-
-  try {
-    const { default: Groq } = await import('groq-sdk');
-    groqClient = new Groq({ apiKey, dangerouslyAllowBrowser: true });
-    console.log('[Groq] Client initialized successfully');
-    return groqClient;
-  } catch (err) {
-    console.error('[Groq] Failed to initialize Groq SDK:', err);
-    return null;
-  }
-};
-
 // ─── Offline fallback (only used when API is truly unavailable) ───────────────
 const getOfflineFallback = (message) => {
   const msg = message.toLowerCase();
@@ -43,70 +19,52 @@ const getOfflineFallback = (message) => {
   return "I'm having trouble connecting to my AI backend. Please try again in a moment, or explore the **Timeline** and **Quiz** pages!";
 };
 
-// ─── Chat (multi-turn) ────────────────────────────────────────────────────────
+/**
+ * AI Chat Response via Server Proxy
+ * Calls /api/chat which uses the server-side GROQ_API_KEY
+ */
 export const getGroqChatResponse = async (message, history = []) => {
   try {
-    const client = await getClient();
-
-    if (!client) {
-      console.warn('[Groq] No client — using offline fallback for chat');
-      return getOfflineFallback(message);
-    }
-
-    const messages = [
-      {
-        role: 'system',
-        content:
-          'You are Electra, a friendly and knowledgeable AI Election Assistant for India. ' +
-          'Explain democratic processes, voting rights, and election facts clearly and impartially. ' +
-          'Use Markdown formatting (bold, bullet lists, headers) to make your answers easy to read. ' +
-          'Keep answers concise but thorough.',
-      },
-      // Convert history: role 'model' → 'assistant' for Groq
-      ...history.map((m) => ({
-        role: m.role === 'model' ? 'assistant' : 'user',
-        content: typeof m.parts === 'string' ? m.parts : m.content ?? '',
-      })),
-      { role: 'user', content: message },
-    ];
-
-    const completion = await client.chat.completions.create({
-      model: 'llama-3.1-8b-instant',
-      messages,
-      temperature: 0.7,
-      max_tokens: 2048,
+    const response = await fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message, history }),
     });
 
-    return completion.choices[0]?.message?.content ?? "Sorry, I couldn't generate a response.";
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || 'Failed to fetch AI response');
+    }
+
+    const data = await response.json();
+    return data.response;
   } catch (err) {
-    console.error('[Groq] Chat error:', err);
+    console.error('[Groq Proxy] Chat error:', err);
     return getOfflineFallback(message);
   }
 };
 
-// ─── Single prompt (used by Timeline / Map) ───────────────────────────────────
+/**
+ * Single AI Prompt Response via Server Proxy
+ * Calls /api/prompt which uses the server-side GROQ_API_KEY
+ */
 export const getGroqResponse = async (prompt) => {
   try {
-    const client = await getClient();
-
-    if (!client) {
-      console.warn('[Groq] No client — returning unavailable message');
-      return 'Information is currently unavailable.';
-    }
-
-    const completion = await client.chat.completions.create({
-      model: 'llama-3.1-8b-instant',
-      messages: [
-        { role: 'system', content: 'You are an expert on Indian Elections and democracy.' },
-        { role: 'user', content: prompt },
-      ],
-      temperature: 0.5,
-      max_tokens: 2000,
+    const response = await fetch('/api/prompt', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ prompt }),
     });
 
-    return completion.choices[0]?.message?.content ?? 'Information unavailable.';
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || 'Failed to fetch AI response');
+    }
+
+    const data = await response.json();
+    return data.response;
   } catch (err) {
-    console.error('[Groq] Response error:', err);
-    return 'Information unavailable.';
+    console.error('[Groq Proxy] Response error:', err);
+    return 'Information is currently unavailable.';
   }
 };
