@@ -1,12 +1,7 @@
 import { initializeApp, getApps } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
-import { getAnalytics, logEvent, isSupported } from 'firebase/analytics';
 
-/**
- * Firebase configuration sourced from environment variables.
- * All values must be set in .env — see .env.example for reference.
- */
 const firebaseConfig = {
   apiKey:            import.meta.env.VITE_FIREBASE_API_KEY,
   authDomain:        import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
@@ -16,37 +11,32 @@ const firebaseConfig = {
   appId:             import.meta.env.VITE_FIREBASE_APP_ID,
 };
 
-// Initialize only once (Vite HMR can run this module multiple times)
-const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
-const auth = getAuth(app);
-const db   = getFirestore(app);
+// Initialize Firebase safely — mock/missing config won't crash the app
+let app, auth, db;
+try {
+  app  = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
+  auth = getAuth(app);
+  db   = getFirestore(app);
+} catch (e) {
+  console.warn('[Firebase] Initialization skipped (mock or missing config):', e.message);
+}
 
 /**
- * Returns the Firebase Analytics instance if the browser supports it.
- * Gracefully returns null in SSR / restricted environments.
- * @returns {Promise<import('firebase/analytics').Analytics | null>}
- */
-const getAnalyticsInstance = async () => {
-  try {
-    const supported = await isSupported();
-    if (supported) {
-      return getAnalytics(app);
-    }
-  } catch (e) {
-    console.warn('[Firebase] Analytics not supported:', e);
-  }
-  return null;
-};
-
-/**
- * Logs a custom analytics event. No-ops gracefully if analytics is unavailable.
- * @param {string} eventName - Firebase Analytics event name
- * @param {object} [params]  - Additional event parameters
+ * Logs a custom analytics event safely.
+ * No-ops if Firebase is unavailable.
+ * @param {string} eventName
+ * @param {object} [params]
  */
 export const logAnalyticsEvent = async (eventName, params = {}) => {
-  const analytics = await getAnalyticsInstance();
-  if (analytics) {
-    logEvent(analytics, eventName, params);
+  try {
+    const { getAnalytics, logEvent, isSupported } = await import('firebase/analytics');
+    const supported = await isSupported();
+    if (supported && app) {
+      const analytics = getAnalytics(app);
+      logEvent(analytics, eventName, params);
+    }
+  } catch (e) {
+    // Analytics not available — silently ignore
   }
 };
 
