@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useCallback, memo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CheckCircle2, XCircle, AlertCircle, Search, ShieldCheck } from 'lucide-react';
 import { z } from 'zod';
@@ -20,7 +20,7 @@ const Eligibility = () => {
   
   const [result, setResult] = useState(null);
 
-  const checkEligibility = (e) => {
+  const checkEligibility = useCallback((e) => {
     e.preventDefault();
     
     try {
@@ -69,14 +69,13 @@ const Eligibility = () => {
         setResult({ status: 'error', title: 'Error', message: 'An unexpected error occurred.', action: null });
       }
     }
-  };
+  }, [formData]);
 
-  const handleInputChange = (e) => {
+  const handleInputChange = useCallback((e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
-    // Reset result when user changes input
     if (result) setResult(null);
-  };
+  }, [result]);
 
   return (
     <div className="max-w-4xl mx-auto py-8 px-4">
@@ -111,10 +110,13 @@ const Eligibility = () => {
                 onChange={handleInputChange}
                 min="0"
                 max="120"
+                aria-required="true"
+                aria-describedby="age-hint"
                 className="w-full px-4 py-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-red-500 focus:border-transparent outline-none transition-shadow text-slate-900 bg-slate-50 focus:bg-white"
                 placeholder="e.g. 25"
                 required
               />
+              <p id="age-hint" className="sr-only">Enter your age as a number between 0 and 120</p>
             </div>
 
             <div>
@@ -188,7 +190,7 @@ const Eligibility = () => {
         </motion.div>
 
         {/* Results Section */}
-        <div className="h-full">
+        <div className="h-full" aria-live="polite" aria-atomic="true">
           <AnimatePresence mode="wait">
             {!result ? (
               <motion.div
@@ -261,4 +263,4 @@ const Eligibility = () => {
   );
 };
 
-export default Eligibility;
+export default memo(Eligibility);

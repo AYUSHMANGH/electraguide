@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, memo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronRight, CalendarCheck, Megaphone, Vote, BarChart4 } from 'lucide-react';
 import { getGroqResponse } from '../lib/groq';
@@ -48,7 +48,7 @@ const Timeline = () => {
   const [cache, setCache] = useState({});
 
   // Fetch detailed explanation from Gemini when a step is clicked
-  const handleStepClick = async (step) => {
+  const handleStepClick = useCallback(async (step) => {
     setActiveStep(step);
     
     if (cache[step.id]) {
@@ -68,7 +68,7 @@ const Timeline = () => {
     
     setDetailedContent(response);
     setIsLoading(false);
-  };
+  }, [cache]);
 
   // Fetch initial content on mount
   useEffect(() => {
@@ -98,6 +98,8 @@ const Timeline = () => {
                 <button
                   key={step.id}
                   onClick={() => handleStepClick(step)}
+                  aria-selected={isActive}
+                  aria-label={`View details for ${step.title}`}
                   className={`relative flex items-center p-4 rounded-2xl transition-all duration-300 text-left overflow-hidden group ${
                     isActive 
                       ? 'bg-white shadow-lg border border-slate-200' 
@@ -185,4 +187,4 @@ const Timeline = () => {
   );
 };
 
-export default Timeline;
+export default memo(Timeline);
