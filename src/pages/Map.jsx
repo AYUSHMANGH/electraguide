@@ -1,51 +1,61 @@
 import { useState, useEffect, useCallback } from 'react';
-import { GoogleMap, useJsApiLoader, Marker, InfoWindow } from '@react-google-maps/api';
+import { MapContainer, TileLayer, Marker, useMap, useMapEvents } from 'react-leaflet';
 import { motion } from 'framer-motion';
 import { MapPin, Navigation, AlertCircle, Search } from 'lucide-react';
 import { getGroqResponse } from '../lib/groq';
 import ReactMarkdown from 'react-markdown';
 import DOMPurify from 'dompurify';
 
-const containerStyle = {
-  width: '100%',
-  height: '100%',
-  borderRadius: '1rem',
-};
+// Import Leaflet CSS
+import 'leaflet/dist/leaflet.css';
+import L from 'leaflet';
+
+// Fix for default marker icon in Leaflet + React
+import markerIcon from 'leaflet/dist/images/marker-icon.png';
+import markerShadow from 'leaflet/dist/images/marker-shadow.png';
+
+let DefaultIcon = L.icon({
+    iconUrl: markerIcon,
+    shadowUrl: markerShadow,
+    iconSize: [25, 41],
+    iconAnchor: [12, 41]
+});
+L.Marker.prototype.options.icon = DefaultIcon;
 
 // Default center (New Delhi)
-const defaultCenter = {
-  lat: 28.6139,
-  lng: 77.2090
-};
+const defaultCenter = [28.6139, 77.2090];
+
+// Helper to update map view when center changes
+function ChangeView({ center, zoom }) {
+  const map = useMap();
+  useEffect(() => {
+    map.setView(center, zoom);
+  }, [center, zoom, map]);
+  return null;
+}
+
+// Helper to handle map clicks
+function LocationMarker({ onMapClick }) {
+  useMapEvents({
+    click(e) {
+      onMapClick([e.latlng.lat, e.latlng.lng]);
+    },
+  });
+  return null;
+}
 
 const Map = () => {
-  const { isLoaded } = useJsApiLoader({
-    id: 'google-map-script',
-    googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY
-  });
-
-  const [map, setMap] = useState(null);
   const [center, setCenter] = useState(defaultCenter);
+  const [zoom, setZoom] = useState(5);
   const [userLocation, setUserLocation] = useState(null);
   const [locationError, setLocationError] = useState(null);
   const [localInfo, setLocalInfo] = useState(null);
   const [isLoadingInfo, setIsLoadingInfo] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
   
-  const onLoad = useCallback(function callback(map) {
-    setMap(map);
-  }, []);
-
-  const onUnmount = useCallback(function callback(map) {
-    setMap(null);
-  }, []);
-
   const fetchLocalPoliticalInfo = async (lat, lng) => {
     setIsLoadingInfo(true);
     setLocalInfo(null);
     try {
-      // Create a prompt for Gemini to guess the dominating political parties based on coordinates
-      // In a real app, this would use a reverse geocoding API first, then query a political database
       const prompt = `Based on the approximate geographical coordinates (Latitude: ${lat}, Longitude: ${lng}) in India, what are the typically dominating political parties or the general political landscape of this region? 
       Please provide:
       1. The likely state/region.
@@ -72,17 +82,11 @@ const Map = () => {
 
     navigator.geolocation.getCurrentPosition(
       (position) => {
-        const newPos = {
-          lat: position.coords.latitude,
-          lng: position.coords.longitude,
-        };
+        const newPos = [position.coords.latitude, position.coords.longitude];
         setCenter(newPos);
         setUserLocation(newPos);
-        map?.panTo(newPos);
-        map?.setZoom(12);
-        
-        // Fetch info for the user's location
-        fetchLocalPoliticalInfo(newPos.lat, newPos.lng);
+        setZoom(12);
+        fetchLocalPoliticalInfo(newPos[0], newPos[1]);
       },
       (error) => {
         setLocationError("Unable to retrieve your location. Please check your browser permissions.");
@@ -91,15 +95,11 @@ const Map = () => {
     );
   };
   
-  // Handle manual map click to check other areas
-  const handleMapClick = (e) => {
-      const newPos = {
-          lat: e.latLng.lat(),
-          lng: e.latLng.lng()
-      };
-      setCenter(newPos);
-      setUserLocation(newPos);
-      fetchLocalPoliticalInfo(newPos.lat, newPos.lng);
+  const handleMapClick = (latlng) => {
+    setCenter(latlng);
+    setUserLocation(latlng);
+    setZoom(12);
+    fetchLocalPoliticalInfo(latlng[0], latlng[1]);
   };
 
   return (
@@ -131,46 +131,29 @@ const Map = () => {
 
       <div className="flex flex-col lg:flex-row gap-6 flex-1 min-h-0">
         {/* Map Container */}
-        <div className="lg:w-2/3 h-96 lg:h-full bg-white rounded-3xl shadow-xl border border-slate-200 overflow-hidden relative">
-          {!isLoaded ? (
-            <div className="absolute inset-0 flex items-center justify-center bg-slate-50">
-              <div className="w-10 h-10 border-4 border-slate-200 border-t-primary-600 rounded-full animate-spin"></div>
-            </div>
-          ) : (
-            <GoogleMap
-              mapContainerStyle={containerStyle}
-              center={center}
-              zoom={5}
-              onLoad={onLoad}
-              onUnmount={onUnmount}
-              onClick={handleMapClick}
-              options={{
-                styles: [
-                  {
-                    featureType: "administrative",
-                    elementType: "geometry",
-                    stylers: [{ visibility: "on" }]
-                  },
-                  {
-                    featureType: "poi",
-                    stylers: [{ visibility: "off" }]
-                  }
-                ],
-                streetViewControl: false,
-                mapTypeControl: false,
-              }}
-            >
-              {userLocation && (
-                <Marker position={userLocation} animation={window.google.maps.Animation.DROP} />
-              )}
-            </GoogleMap>
-          )}
+        <div className="lg:w-2/3 h-96 lg:h-full bg-white rounded-3xl shadow-xl border border-slate-200 overflow-hidden relative z-0">
+          <MapContainer 
+            center={center} 
+            zoom={zoom} 
+            style={{ height: '100%', width: '100%' }}
+            zoomControl={true}
+          >
+            <TileLayer
+              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            />
+            <ChangeView center={center} zoom={zoom} />
+            <LocationMarker onMapClick={handleMapClick} />
+            {userLocation && (
+              <Marker position={userLocation} />
+            )}
+          </MapContainer>
           
-          <div className="absolute top-4 left-4 right-4 md:right-auto md:w-80 bg-white/90 backdrop-blur-md p-3 rounded-xl shadow-lg border border-white/50 flex gap-2">
+          <div className="absolute top-4 left-12 right-4 md:right-auto md:w-80 bg-white/90 backdrop-blur-md p-3 rounded-xl shadow-lg border border-white/50 flex gap-2 z-[1000]">
             <Search size={20} className="text-slate-400" />
             <input 
               type="text" 
-              placeholder="Click anywhere on the map..." 
+              placeholder="Tap anywhere on the map..." 
               disabled
               className="bg-transparent border-none outline-none text-sm w-full text-slate-700 placeholder-slate-400"
             />
