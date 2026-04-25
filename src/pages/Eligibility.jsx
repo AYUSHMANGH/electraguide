@@ -34,7 +34,7 @@ const Eligibility = () => {
         status: 'ineligible', 
         title: 'Not Eligible',
         message: 'You must be a citizen of the country to vote in national elections.',
-        action: 'Learn about citizenship requirements',
+        action: 'Visit Election Commission of India',
         link: 'https://eci.gov.in'
       });
     } else if (validatedData.age < 18) {
@@ -42,16 +42,16 @@ const Eligibility = () => {
         status: 'ineligible',
         title: 'Not Eligible Yet', 
         message: `You must be at least 18 years old to vote. You can register in ${18 - validatedData.age} year(s).`,
-        action: 'Learn about pre-registration',
+        action: 'Learn about voter registration',
         link: 'https://voters.eci.gov.in'
       });
     } else if (validatedData.residency === 'no') {
        setResult({ 
         status: 'warning',
         title: 'Further Action Required', 
-        message: 'You may need to establish residency or apply for an absentee ballot if you live abroad.',
-        action: 'View absentee voting guidelines',
-        link: 'https://www.mea.gov.in/overseas-voting.htm'
+        message: 'You may need to establish residency or apply for an absentee ballot if you live abroad. Check the NRI voting guidelines on the ECI portal.',
+        action: 'View NRI / Overseas Voter Info',
+        link: 'https://eci.gov.in/nri-voter/'
       });
     } else {
       setResult({ 
